@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Sheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1f2937, #111827);
+            color: #d1d5db;
+        }
+
+        .outer-container {
+            background-color: rgba(31, 41, 55, 0.4);
+            border-radius: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card {
+            background-color: rgba(31, 41, 55, 0.4);
+            border-radius: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="text"], input[type="number"], textarea {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f9fafb;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            width: 100%;
+            transition: all 0.2s ease-in-out;
+            text-align: left; /* Aligns text to the left */
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+        }
+
+        .header-section input {
+            background-color: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0;
+            padding: 0.25rem;
+        }
+
+        .header-section input:focus {
+            box-shadow: none;
+            border-bottom-color: #6366f1;
+        }
+        
+        /* Custom styles for stat inputs */
+        .stat-input-box {
+            width: 4rem; /* Custom width for small inputs */
+            text-align: left;
+        }
+        
+        /* Rank input styling for the tier system */
+        .rank-input {
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center !important;
+            user-select: none; /* Prevent highlighting the rank text when clicking */
+        }
+        
+        /* Style for dynamic buttons */
+        .dynamic-btn {
+            background-color: rgba(99, 102, 241, 0.8);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .dynamic-btn:hover {
+            background-color: rgb(99, 102, 241);
+        }
+
+        /* Skill table specific styles */
+        .skill-table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .skill-table-header div:first-child {
+            text-align: left;
+        }
+
+        .skill-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        /* Specific style for layered skills to remove padding */
+        .unactive-skill-row, .equipment-row, .dynamic-input-row {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem; /* Gap between skill name and rank/level */
+            padding: 0.5rem 0; /* Minimal padding for visual separation */
+            margin-top: 0.5rem;
+        }
+        
+        .unactive-skill-row .delete-unactive-skill,
+        .equipment-row .delete-equipment,
+        .dynamic-input-row .delete-dynamic-input {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        /* Modal specific styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1f2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="container mx-auto outer-container p-6 sm:p-10 mb-8">
+        <!-- New Title and Subtitle Section, aligned left -->
+        <div class="mb-8">
+            <h1 class="text-5xl font-extrabold text-white mb-2 text-left">Isekai Quest</h1>
+            <p class="text-lg font-medium text-gray-300 text-left">Character Sheet</p>
+        </div>
+
+        <!-- Character Info Header -->
+        <div class="header-section grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 text-center sm:text-left">
+            <div>
+                <label for="name" class="block text-sm font-medium mb-1 text-gray-400">Name</label>
+                <input type="text" id="name" class="w-full text-xl font-bold">
+            </div>
+            <div>
+                <label for="level" class="block text-sm font-medium mb-1 text-gray-400">Level</label>
+                <input type="number" id="level" class="w-full text-xl font-bold">
+            </div>
+            <div>
+                <label for="class" class="block text-sm font-medium mb-1 text-gray-400">Class</label>
+                <input type="text" id="class" class="w-full text-xl font-bold">
+            </div>
+            <div>
+                <label for="job" class="block text-sm font-medium mb-1 text-gray-400">Job</label>
+                <input type="text" id="job" class="w-full text-xl font-bold">
+            </div>
+            <div>
+                <label for="xp" class="block text-sm font-medium mb-1 text-gray-400">XP</label>
+                <input type="number" id="xp" class="w-full text-xl font-bold">
+            </div>
+            <div>
+                <label for="race" class="block text-sm font-medium mb-1 text-gray-400">Race</label>
+                <input type="text" id="race" class="w-full text-xl font-bold">
+            </div>
+            <div>
+                <label for="title" class="block text-sm font-medium mb-1 text-gray-400">Title</label>
+                <input type="text" id="title" class="w-full text-xl font-bold">
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Aura and Equipment Section -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Aura Section -->
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Aura</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                        <!-- Vitality -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-center">Vitality</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="vitality-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="vitality-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center mt-2">
+                                <label class="text-xs text-gray-400 mb-1 w-full text-left">Modified</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-400 text-sm font-bold">P:</span>
+                                    <input type="number" id="vitality-p1" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">/</span>
+                                    <input type="number" id="vitality-p2" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">C:</span>
+                                    <input type="number" id="vitality-c" class="stat-input-box">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Stamina -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-center">Stamina</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="stamina-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="stamina-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center mt-2">
+                                <label class="text-xs text-gray-400 mb-1 w-full text-left">Modified</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-400 text-sm font-bold">P:</span>
+                                    <input type="number" id="stamina-p1" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">/</span>
+                                    <input type="number" id="stamina-p2" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">C:</span>
+                                    <input type="number" id="stamina-c" class="stat-input-box">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Mana -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-center">Mana</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="mana-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="mana-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center mt-2">
+                                <label class="text-xs text-gray-400 mb-1 w-full text-left">Modified</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-400 text-sm font-bold">P:</span>
+                                    <input type="number" id="mana-p1" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">/</span>
+                                    <input type="number" id="mana-p2" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">C:</span>
+                                    <input type="number" id="mana-c" class="stat-input-box">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Ki -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-center">Ki</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="ki-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="ki-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center mt-2">
+                                <label class="text-xs text-gray-400 mb-1 w-full text-left">Modified</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-400 text-sm font-bold">P:</span>
+                                    <input type="number" id="ki-p1" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">/</span>
+                                    <input type="number" id="ki-p2" class="stat-input-box w-1/2">
+                                    <span class="text-gray-400 text-sm font-bold">C:</span>
+                                    <input type="number" id="ki-c" class="stat-input-box">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Section -->
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Stats</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                        <!-- Strength -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Strength</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="strength-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="strength-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="strength-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Power -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Power</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="power-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="power-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="power-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Agility -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Agility</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="agility-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="agility-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="agility-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Accuracy -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Accuracy</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="accuracy-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="accuracy-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="accuracy-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Speed -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Speed</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="speed-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="speed-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="speed-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Will -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Will</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="will-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="will-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="will-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Toughness -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Toughness</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="toughness-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="toughness-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="toughness-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Resistance -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Resistance</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="resistance-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="resistance-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="resistance-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Wit -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Wit</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="wit-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="wit-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="wit-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Charm -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Charm</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="charm-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="charm-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="charm-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Deception -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Deception</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="deception-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="deception-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="deception-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Perception -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Perception</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="perception-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="perception-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="perception-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Concealment -->
+                        <div class="flex flex-col items-center">
+                            <span class="font-medium text-gray-300 w-full text-left">Concealment</span>
+                            <div class="flex gap-4 items-center">
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Base</label>
+                                    <input type="number" id="concealment-base" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Modified</label>
+                                    <input type="number" id="concealment-modified" class="stat-input-box">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" id="concealment-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Equipped Skills Section -->
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Equipped Skills</h2>
+                    <div class="flex flex-col sm:flex-row gap-6">
+                        <!-- Equipped Skills Table -->
+                        <div class="w-full">
+                            <h3 class="text-xl font-bold mb-2">Active</h3>
+                            <div class="skill-table-header">
+                                <div>Skill</div>
+                                <div>Lvl</div>
+                                <div>Rank</div>
+                            </div>
+                            <div id="active-skills-container" class="space-y-2">
+                                <!-- Equipped Skill Slots (10) -->
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 1">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 2">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 3">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 4">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 5">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 6">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 7">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 8">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 9">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 10">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Passive Skills Table -->
+                        <div class="w-full">
+                            <h3 class="text-xl font-bold mb-2">Passive</h3>
+                            <div class="skill-table-header">
+                                <div>Skill</div>
+                                <div>Lvl</div>
+                                <div>Rank</div>
+                            </div>
+                            <div id="passive-skills-container" class="space-y-2">
+                                <!-- Passive Skill Slots (10) -->
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 1">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 2">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 3">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 4">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 5">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 6">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 7">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 8">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 9">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                                <div class="skill-row">
+                                    <input type="text" placeholder="Skill 10">
+                                    <input type="number" class="w-full stat-input-box skill-level-input">
+                                    <!-- RANK FIELD - CLICK TO CYCLE -->
+                                    <input type="text" class="w-full stat-input-box text-center rank-input skill-rank-input" value="F" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Equipment</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="head" class="block text-sm font-medium mb-1 text-gray-400">Head</label>
+                            <input type="text" id="head" class="w-full">
+                        </div>
+                        <div>
+                            <label for="torso" class="block text-sm font-medium mb-1 text-gray-400">Torso</label>
+                            <input type="text" id="torso" class="w-full">
+                        </div>
+                        <div>
+                            <label for="r-hand" class="block text-sm font-medium mb-1 text-gray-400">R Hand</label>
+                            <input type="text" id="r-hand" class="w-full">
+                        </div>
+                        <div>
+                            <label for="l-hand" class="block text-sm font-medium mb-1 text-gray-400">L Hand</label>
+                            <input type="text" id="l-hand" class="w-full">
+                        </div>
+                        <div>
+                            <label for="legs" class="block text-sm font-medium mb-1 text-gray-400">Legs</label>
+                            <input type="text" id="legs" class="w-full">
+                        </div>
+                        <div>
+                            <label for="feet" class="block text-sm font-medium mb-1 text-gray-400">Feet</label>
+                            <input type="text" id="feet" class="w-full">
+                        </div>
+                    </div>
+                    
+                    <!-- Dynamic Equipment Section -->
+                    <h3 class="text-xl font-bold mt-8 mb-4 text-white">Additional Equipment</h3>
+                    <div id="dynamic-equipment-container" class="space-y-4">
+                        <!-- Default field, cannot be deleted -->
+                    </div>
+                    <button id="add-equipment" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition-all duration-200">
+                        + Add Item
+                    </button>
+                </div>
+
+                <!-- Unequipped Skills Section -->
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Unequipped Skills (Click Rank to Cycle)</h2>
+                    <div id="unactive-skills-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Initial fields will be added here by JS -->
+                    </div>
+                    <!-- Fixed button styling and order -->
+                    <button id="add-unactive-skill" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition-all duration-200">
+                        + Add Skill
+                    </button>
+                </div>
+            </div>
+
+            <!-- SKILLS, TRAITS, INVENTORY etc. Section -->
+            <div class="space-y-6">
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Currency</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col items-center">
+                            <label for="currency-copper" class="mb-1">Copper</label>
+                            <input type="number" id="currency-copper" class="w-full stat-input-box">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label for="currency-brass" class="mb-1">Brass</label>
+                            <input type="number" id="currency-brass" class="w-full stat-input-box">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label for="currency-small-silver" class="mb-1">Small Silver</label>
+                            <input type="number" id="currency-small-silver" class="w-full stat-input-box">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label for="currency-large-silver" class="mb-1">Large Silver</label>
+                            <input type="number" id="currency-large-silver" class="w-full stat-input-box">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label for="currency-small-gold" class="mb-1">Small Gold</label>
+                            <input type="number" id="currency-small-gold" class="w-full stat-input-box">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label for="currency-large-gold" class="mb-1">Large Gold</label>
+                            <input type="number" id="currency-large-gold" class="w-full stat-input-box">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label for="currency-krown" class="mb-1">Krown</label>
+                            <input type="number" id="currency-krown" class="w-full stat-input-box">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Traits</h2>
+                    <div class="mb-4">
+                        <textarea id="traits" rows="4" class="w-full p-2"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Skill Seeds Section -->
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Skill Seeds</h2>
+                    <div class="mb-4">
+                        <textarea id="skill-seeds" rows="4" class="w-full p-2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Jobs & Titles Section -->
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Jobs & Titles</h2>
+                    
+                    <!-- Jobs Section -->
+                    <h3 class="text-xl font-bold mt-4 mb-4 text-white">Jobs</h3>
+                    <div id="dynamic-jobs-container" class="space-y-4">
+                        <!-- Default field, cannot be deleted -->
+                    </div>
+                    <button id="add-job" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition-all duration-200">
+                        + Add Job
+                    </button>
+
+                    <!-- Titles Section -->
+                    <h3 class="text-xl font-bold mt-8 mb-4 text-white">Titles</h3>
+                    <div id="dynamic-titles-container" class="space-y-4">
+                        <!-- Default field, cannot be deleted -->
+                    </div>
+                    <button id="add-title" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition-all duration-200">
+                        + Add Title
+                    </button>
+                </div>
+
+                <!-- New Points Section -->
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Points</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="stats-points" class="block text-sm font-medium mb-1 text-gray-400">Stats</label>
+                            <input type="number" id="stats-points" class="w-full stat-input-box">
+                        </div>
+                        <div>
+                            <label for="stat-ranks-points" class="block text-sm font-medium mb-1 text-gray-400">Stat Ranks</label>
+                            <input type="number" id="stat-ranks-points" class="w-full stat-input-box">
+                        </div>
+                        <div>
+                            <label for="skills-points" class="block text-sm font-medium mb-1 text-gray-400">Skills</label>
+                            <input type="number" id="skills-points" class="w-full stat-input-box">
+                        </div>
+                        <div>
+                            <label for="skill-ranks-points" class="block text-sm font-medium mb-1 text-gray-400">Skill Ranks</label>
+                            <input type="number" id="skill-ranks-points" class="w-full stat-input-box">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="skill-acquisitions-points" class="block text-sm font-medium mb-1 text-gray-400">Skill Acquisitions</label>
+                            <input type="number" id="skill-acquisitions-points" class="w-full">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Inventory</h2>
+                    <textarea id="inventory" rows="10" class="w-full p-2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons for Save/Load/Export/Import -->
+        <div class="flex flex-col justify-start gap-4 mt-8">
+            <div class="flex flex-wrap gap-4">
+                <button id="save-button" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Save
+                </button>
+                <button id="load-button" class="bg-slate-700 hover:bg-slate-600 text-gray-300 font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Load
+                </button>
+                <button id="clear-button" class="bg-slate-700 hover:bg-slate-600 text-gray-300 font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Clear
+                </button>
+            </div>
+            <div class="flex flex-wrap gap-4">
+                <button id="export-button" class="bg-slate-700 hover:bg-slate-600 text-gray-300 font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Export
+                </button>
+                <button id="import-button" class="bg-slate-700 hover:bg-slate-600 text-gray-300 font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Import
+                </button>
+            </div>
+            <input type="file" id="import-file" class="hidden" accept=".json">
+        </div>
+
+        <!-- Status Message -->
+        <div id="status-message" class="text-center mt-6 text-sm font-medium text-green-400 transition-opacity duration-300 opacity-0"></div>
+
+    </div>
+
+    <!-- The custom confirmation modal for SAVE -->
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold text-white mb-4">Confirm Save</h3>
+            <p class="text-gray-300 mb-6">Are you sure you want to save your current character sheet? This will overwrite your previously saved data.</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-save-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Confirm Save
+                </button>
+                <button id="cancel-save-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The custom confirmation modal for CLEAR -->
+    <div id="clear-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold text-white mb-4">Confirm Clear</h3>
+            <p class="text-gray-300 mb-6">Are you sure you want to clear all data from the character sheet? This action cannot be undone.</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-clear-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Confirm Clear
+                </button>
+                <button id="cancel-clear-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The custom confirmation modal for LOAD -->
+    <div id="load-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold text-white mb-4">Confirm Load</h3>
+            <p class="text-gray-300 mb-6">Are you sure you want to load the saved data? This will overwrite your current character sheet.</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-load-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Confirm Load
+                </button>
+                <button id="cancel-load-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const saveButton = document.getElementById('save-button');
+            const loadButton = document.getElementById('load-button');
+            const clearButton = document.getElementById('clear-button');
+            const exportButton = document.getElementById('export-button');
+            const importButton = document.getElementById('import-button');
+            const importFile = document.getElementById('import-file');
+            const statusMessage = document.getElementById('status-message');
+            const addEquipmentButton = document.getElementById('add-equipment');
+            const dynamicEquipmentContainer = document.getElementById('dynamic-equipment-container');
+            const addUnactiveSkillButton = document.getElementById('add-unactive-skill');
+            const unactiveSkillsContainer = document.getElementById('unactive-skills-container');
+            const addJobButton = document.getElementById('add-job');
+            const dynamicJobsContainer = document.getElementById('dynamic-jobs-container');
+            const addTitleButton = document.getElementById('add-title');
+            const dynamicTitlesContainer = document.getElementById('dynamic-titles-container');
+
+            // Modal elements for SAVE
+            const saveModal = document.getElementById('save-modal');
+            const confirmSaveButton = document.getElementById('confirm-save-button');
+            const cancelSaveButton = document.getElementById('cancel-save-button');
+            
+            // Modal elements for CLEAR
+            const clearModal = document.getElementById('clear-modal');
+            const confirmClearButton = document.getElementById('confirm-clear-button');
+            const cancelClearButton = document.getElementById('cancel-clear-button');
+            
+            // Modal elements for LOAD
+            const loadModal = document.getElementById('load-modal');
+            const confirmLoadButton = document.getElementById('confirm-load-button');
+            const cancelLoadButton = document.getElementById('cancel-load-button');
+
+            // Tier system configuration
+            const TIERS = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'L'];
+            
+            // Event listener for cycling through ranks
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('rank-input')) {
+                    const input = e.target;
+                    const currentRank = input.value.toUpperCase();
+                    const currentIndex = TIERS.indexOf(currentRank);
+                    
+                    let newIndex = currentIndex + 1;
+                    if (newIndex >= TIERS.length || currentIndex === -1) {
+                        newIndex = 0; // Cycle back to 'F' or reset if invalid value
+                    }
+                    
+                    input.value = TIERS[newIndex];
+                }
+            });
+
+            // Function to create a new dynamic equipment field
+            function createEquipmentField(value = '') {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('equipment-row', 'flex', 'flex-col', 'gap-2', 'relative');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-equipment', 'dynamic-btn', 'text-xs', 'w-6', 'h-6', 'absolute', 'top-0', 'right-0', 'flex-shrink-0', 'flex', 'items-center', 'justify-center', 'font-bold');
+                deleteBtn.innerHTML = '&times;';
+                itemDiv.innerHTML = `<input type="text" class="equipment-input w-full" value="${value}" placeholder="Item Name">`;
+                itemDiv.appendChild(deleteBtn);
+                return itemDiv;
+            }
+
+            // Function to create a new dynamic text field for Jobs and Titles
+            function createDynamicInputField(value = '') {
+                const inputDiv = document.createElement('div');
+                inputDiv.classList.add('dynamic-input-row', 'flex', 'flex-col', 'gap-2', 'relative');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-dynamic-input', 'dynamic-btn', 'text-xs', 'w-6', 'h-6', 'absolute', 'top-0', 'right-0', 'flex-shrink-0', 'flex', 'items-center', 'justify-content', 'font-bold');
+                deleteBtn.innerHTML = '&times;';
+                inputDiv.innerHTML = `<input type="text" class="dynamic-input w-full" value="${value}" placeholder="Enter name">`;
+                inputDiv.appendChild(deleteBtn);
+                return inputDiv;
+            }
+
+            // Function to create a new unactive skill field with layered fields
+            function createUnactiveSkillField(skill = {}) {
+                const skillName = skill.name || '';
+                // Ensure rank is a valid tier, otherwise default to 'F'
+                const initialRank = TIERS.includes((skill.rank || 'F').toUpperCase()) ? (skill.rank || 'F').toUpperCase() : 'F';
+                const skillLevel = skill.level || '';
+                
+                const skillDiv = document.createElement('div');
+                skillDiv.classList.add('unactive-skill-row', 'flex', 'flex-col', 'gap-2', 'relative');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-unactive-skill', 'dynamic-btn', 'text-xs', 'w-6', 'h-6', 'absolute', 'top-0', 'right-0', 'flex-shrink-0', 'flex', 'items-center', 'justify-center', 'font-bold');
+                deleteBtn.innerHTML = '&times;';
+
+                // Reverted to LEVEL then RANK, as originally intended.
+                skillDiv.innerHTML = `
+                    <input type="text" class="unactive-skill-name" placeholder="Skill Name" value="${skillName}">
+                    <div class="flex gap-2">
+                        <!-- LEVEL field (Number) -->
+                        <input type="number" class="w-1/2 stat-input-box unactive-skill-level" placeholder="Level" value="${skillLevel}">
+                        <!-- RANK field (Tier System) -->
+                        <input type="text" class="w-1/2 stat-input-box text-center unactive-skill-rank rank-input" placeholder="Rank" value="${initialRank}" readonly>
+                    </div>
+                `;
+                skillDiv.appendChild(deleteBtn);
+                return skillDiv;
+            }
+
+            // Helper function to reset a dynamic container to a single empty field
+            function resetDynamicContainer(container, createFunc) {
+                container.innerHTML = '';
+                const newField = createFunc();
+                // Check if the newly created field has a delete button and remove it for the first element.
+                const deleteButton = newField.querySelector('button');
+                if (deleteButton) {
+                    deleteButton.remove();
+                }
+                container.appendChild(newField);
+            }
+            
+            // Function to clear all data from the character sheet
+            function clearCharacterSheet() {
+                // Clear static fields
+                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-level, .skill-level-input), textarea').forEach(input => {
+                    if (input) {
+                        if (input.classList.contains('rank-input')) {
+                            input.value = 'F'; // Reset rank inputs to F
+                        } else {
+                            input.value = '';
+                        }
+                    }
+                });
+                
+                // Clear and reset dynamic containers
+                resetDynamicContainer(dynamicEquipmentContainer, createEquipmentField);
+                resetDynamicContainer(dynamicJobsContainer, createDynamicInputField);
+                resetDynamicContainer(dynamicTitlesContainer, createDynamicInputField);
+                resetDynamicContainer(unactiveSkillsContainer, createUnactiveSkillField);
+                
+                showStatus('Character sheet cleared!', 'success');
+            }
+            
+            // Function to save character data
+            function saveCharacterSheet() {
+                saveModal.style.display = 'flex';
+            }
+
+            // Function to perform the actual saving after confirmation
+            function saveCharacterSheetConfirmed() {
+                const characterData = {};
+
+                // Save static fields (including rank-inputs which are now type="text")
+                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea').forEach(input => {
+                    if (input) {
+                        characterData[input.id] = input.value;
+                    }
+                });
+                
+                // Save dynamic equipment fields
+                const dynamicEquipment = [];
+                document.querySelectorAll('#dynamic-equipment-container .equipment-input').forEach(input => {
+                    if (input && input.value.trim() !== '') {
+                        dynamicEquipment.push(input.value);
+                    }
+                });
+                characterData.dynamicEquipment = dynamicEquipment;
+
+                // Save dynamic jobs fields
+                const dynamicJobs = [];
+                document.querySelectorAll('#dynamic-jobs-container .dynamic-input').forEach(input => {
+                    if (input && input.value.trim() !== '') {
+                        dynamicJobs.push(input.value);
+                    }
+                });
+                characterData.dynamicJobs = dynamicJobs;
+
+                // Save dynamic titles fields
+                const dynamicTitles = [];
+                document.querySelectorAll('#dynamic-titles-container .dynamic-input').forEach(input => {
+                    if (input && input.value.trim() !== '') {
+                        dynamicTitles.push(input.value);
+                    }
+                });
+                characterData.dynamicTitles = dynamicTitles;
+
+                // Save equipped skills
+                const equippedSkills = [];
+                document.querySelectorAll('#active-skills-container > .skill-row').forEach((slot) => {
+                    const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
+                    const levelInput = slot.querySelector('.skill-level-input');
+                    const rankInput = slot.querySelector('.skill-rank-input');
+                    
+                    const name = nameInput ? nameInput.value : '';
+                    const level = levelInput ? levelInput.value : '';
+                    const rank = rankInput ? rankInput.value : '';
+                    
+                    equippedSkills.push({ name, level, rank });
+                });
+                characterData.equippedSkills = equippedSkills;
+
+                // Save passive skills
+                const passiveSkills = [];
+                document.querySelectorAll('#passive-skills-container > .skill-row').forEach((slot) => {
+                    const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
+                    const levelInput = slot.querySelector('.skill-level-input');
+                    const rankInput = slot.querySelector('.skill-rank-input');
+                    
+                    const name = nameInput ? nameInput.value : '';
+                    const level = levelInput ? levelInput.value : '';
+                    const rank = rankInput ? rankInput.value : '';
+                    
+                    passiveSkills.push({ name, level, rank });
+                });
+                characterData.passiveSkills = passiveSkills;
+                
+                // Save unequipped skills
+                const unequippedSkills = [];
+                document.querySelectorAll('#unactive-skills-container .unactive-skill-row').forEach(row => {
+                    const nameInput = row.querySelector('.unactive-skill-name');
+                    const rankInput = row.querySelector('.unactive-skill-rank');
+                    const levelInput = row.querySelector('.unactive-skill-level');
+                    
+                    const name = nameInput ? nameInput.value : '';
+                    const rank = rankInput ? rankInput.value : '';
+                    const level = levelInput ? levelInput.value : '';
+                    
+                    if (name.trim() !== '' || rank.trim() !== 'F' || level.trim() !== '') {
+                        unequippedSkills.push({ name, rank, level });
+                    }
+                });
+                characterData.unequippedSkills = unequippedSkills;
+
+                try {
+                    localStorage.setItem('characterSheetData', JSON.stringify(characterData));
+                    showStatus('Character sheet saved!', 'success');
+                } catch (e) {
+                    showStatus('Error saving character sheet.', 'error');
+                }
+                saveModal.style.display = 'none';
+            }
+
+
+            // Function to load character data
+            function loadCharacterSheet(data = null) {
+                let characterData = null;
+                if (data) {
+                    characterData = data;
+                } else {
+                    const savedData = localStorage.getItem('characterSheetData');
+                    if (savedData) {
+                        characterData = JSON.parse(savedData);
+                    }
+                }
+
+                if (characterData) {
+                    // Load static fields
+                    document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea').forEach(input => {
+                        if (input) { // Safety check
+                            const savedValue = characterData[input.id];
+                            if (savedValue !== undefined) {
+                                input.value = savedValue;
+                            }
+                        }
+                    });
+
+                    // Clear and repopulate dynamic equipment fields
+                    dynamicEquipmentContainer.innerHTML = '';
+                    const dynamicEquipment = characterData.dynamicEquipment || [];
+                    if (dynamicEquipment.length > 0) {
+                        const firstItem = createEquipmentField(dynamicEquipment[0]);
+                        firstItem.querySelector('.delete-equipment').remove();
+                        dynamicEquipmentContainer.appendChild(firstItem);
+                        
+                        for (let i = 1; i < dynamicEquipment.length; i++) {
+                            dynamicEquipmentContainer.appendChild(createEquipmentField(dynamicEquipment[i]));
+                        }
+                    } else {
+                         resetDynamicContainer(dynamicEquipmentContainer, createEquipmentField);
+                    }
+
+                    // Clear and repopulate dynamic jobs fields
+                    dynamicJobsContainer.innerHTML = '';
+                    const dynamicJobs = characterData.dynamicJobs || [];
+                    if (dynamicJobs.length > 0) {
+                        const firstItem = createDynamicInputField(dynamicJobs[0]);
+                        firstItem.querySelector('.delete-dynamic-input').remove();
+                        dynamicJobsContainer.appendChild(firstItem);
+                        for (let i = 1; i < dynamicJobs.length; i++) {
+                            dynamicJobsContainer.appendChild(createDynamicInputField(dynamicJobs[i]));
+                        }
+                    } else {
+                         resetDynamicContainer(dynamicJobsContainer, createDynamicInputField);
+                    }
+
+                    // Clear and repopulate dynamic titles fields
+                    dynamicTitlesContainer.innerHTML = '';
+                    const dynamicTitles = characterData.dynamicTitles || [];
+                    if (dynamicTitles.length > 0) {
+                        const firstItem = createDynamicInputField(dynamicTitles[0]);
+                        firstItem.querySelector('.delete-dynamic-input').remove();
+                        dynamicTitlesContainer.appendChild(firstItem);
+                        for (let i = 1; i < dynamicTitles.length; i++) {
+                            dynamicTitlesContainer.appendChild(createDynamicInputField(dynamicTitles[i]));
+                        }
+                    } else {
+                         resetDynamicContainer(dynamicTitlesContainer, createDynamicInputField);
+                    }
+
+                    // Load equipped skills
+                    const equippedSkills = characterData.equippedSkills || [];
+                    document.querySelectorAll('#active-skills-container > .skill-row').forEach((slot, index) => {
+                        const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
+                        const levelInput = slot.querySelector('.skill-level-input');
+                        const rankInput = slot.querySelector('.skill-rank-input');
+                        
+                        if (nameInput && equippedSkills[index]) {
+                            nameInput.value = equippedSkills[index].name;
+                        }
+                        if (levelInput && equippedSkills[index]) {
+                            levelInput.value = equippedSkills[index].level;
+                        }
+                        if (rankInput && equippedSkills[index]) {
+                            // Ensure rank is a valid tier, otherwise default to 'F'
+                            const rankValue = equippedSkills[index].rank;
+                            rankInput.value = TIERS.includes((rankValue || 'F').toUpperCase()) ? (rankValue || 'F').toUpperCase() : 'F';
+                        }
+                    });
+
+                    // Load passive skills
+                    const passiveSkills = characterData.passiveSkills || [];
+                    document.querySelectorAll('#passive-skills-container > .skill-row').forEach((slot, index) => {
+                        const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
+                        const levelInput = slot.querySelector('.skill-level-input');
+                        const rankInput = slot.querySelector('.skill-rank-input');
+                        
+                        if (nameInput && passiveSkills[index]) {
+                            nameInput.value = passiveSkills[index].name;
+                        }
+                        if (levelInput && passiveSkills[index]) {
+                            levelInput.value = passiveSkills[index].level;
+                        }
+                        if (rankInput && passiveSkills[index]) {
+                            const rankValue = passiveSkills[index].rank;
+                            rankInput.value = TIERS.includes((rankValue || 'F').toUpperCase()) ? (rankValue || 'F').toUpperCase() : 'F';
+                        }
+                    });
+                    
+                    // Clear and repopulate unequipped skills
+                    unactiveSkillsContainer.innerHTML = '';
+                    const unequippedSkills = characterData.unequippedSkills || [];
+                    if (unequippedSkills.length > 0) {
+                        const firstSkill = createUnactiveSkillField(unequippedSkills[0]);
+                        firstSkill.querySelector('.delete-unactive-skill').remove();
+                        unactiveSkillsContainer.appendChild(firstSkill);
+
+                        for (let i = 1; i < unequippedSkills.length; i++) {
+                            unactiveSkillsContainer.appendChild(createUnactiveSkillField(unequippedSkills[i]));
+                        }
+                    } else {
+                        resetDynamicContainer(unactiveSkillsContainer, createUnactiveSkillField);
+                    }
+                    
+                    showStatus('Character sheet loaded!', 'success');
+
+                } else {
+                    showStatus('No saved data found. Default fields created.', 'info');
+                    clearCharacterSheet();
+                }
+            }
+
+            // Function to export character data to a JSON file
+            function exportCharacterSheet() {
+                saveCharacterSheetConfirmed(); // Save first to ensure latest data is exported
+                const data = localStorage.getItem('characterSheetData');
+                if (data) {
+                    const now = new Date();
+                    const timestamp = now.getFullYear() + '-' +
+                                      String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                                      String(now.getDate()).padStart(2, '0') + '_' +
+                                      String(now.getHours()).padStart(2, '0') + '-' +
+                                      String(now.getMinutes()).padStart(2, '0') + '-' +
+                                      String(now.getSeconds()).padStart(2, '0');
+                    
+                    const name = (document.getElementById('name').value || 'NewCharacter').replace(/\s+/g, '_');
+                    const filename = `${name}_${timestamp}.json`;
+                    
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showStatus('Character sheet exported!', 'success');
+                } else {
+                    showStatus('No data to export. Please save first.', 'error');
+                }
+            }
+
+            // Function to import character data from a JSON file
+            function importCharacterSheet() {
+                importFile.click();
+            }
+
+            importFile.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const importedData = JSON.parse(e.target.result);
+                            loadModal.style.display = 'flex'; // Show load confirmation modal
+                            // Store data temporarily for the confirmation handler
+                            loadModal.dataset.importedData = JSON.stringify(importedData);
+                        } catch (e) {
+                            showStatus('Error parsing file. Please select a valid JSON file.', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Handle confirmed import load
+            confirmLoadButton.addEventListener('click', () => {
+                const dataString = loadModal.dataset.importedData;
+                if (dataString) {
+                    const importedData = JSON.parse(dataString);
+                    loadCharacterSheet(importedData);
+                }
+                loadModal.style.display = 'none';
+                delete loadModal.dataset.importedData;
+            });
+
+
+            function showStatus(message, type = 'success') {
+                statusMessage.textContent = message;
+                statusMessage.classList.remove('opacity-0', 'text-green-400', 'text-red-400', 'text-yellow-400');
+                statusMessage.classList.add('opacity-100', type === 'success' ? 'text-green-400' : (type === 'error' ? 'text-red-400' : 'text-yellow-400'));
+                setTimeout(() => {
+                    statusMessage.classList.remove('opacity-100');
+                    statusMessage.classList.add('opacity-0');
+                }, 3000);
+            }
+
+            // Event listener for adding a new equipment field
+            addEquipmentButton.addEventListener('click', () => dynamicEquipmentContainer.appendChild(createEquipmentField()));
+            
+            // Event listener for adding a new unequipped skill field
+            addUnactiveSkillButton.addEventListener('click', () => unactiveSkillsContainer.appendChild(createUnactiveSkillField()));
+            
+            // Event listener for adding a new job field
+            addJobButton.addEventListener('click', () => dynamicJobsContainer.appendChild(createDynamicInputField()));
+
+            // Event listener for adding a new title field
+            addTitleButton.addEventListener('click', () => dynamicTitlesContainer.appendChild(createDynamicInputField()));
+
+            // Use event delegation for delete buttons
+            dynamicEquipmentContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-equipment')) {
+                    if (dynamicEquipmentContainer.children.length > 1) {
+                        e.target.closest('.equipment-row').remove();
+                    }
+                }
+            });
+
+            // Use event delegation for job and title delete buttons
+            dynamicJobsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-dynamic-input')) {
+                     if (dynamicJobsContainer.children.length > 1) {
+                         e.target.closest('.dynamic-input-row').remove();
+                    }
+                }
+            });
+
+            dynamicTitlesContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-dynamic-input')) {
+                     if (dynamicTitlesContainer.children.length > 1) {
+                         e.target.closest('.dynamic-input-row').remove();
+                    }
+                }
+            });
+            
+            // Use event delegation for unequipped skill delete buttons
+            unactiveSkillsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-unactive-skill')) {
+                    if (unactiveSkillsContainer.children.length > 1) {
+                        e.target.closest('.unactive-skill-row').remove();
+                    }
+                }
+            });
+            
+            saveButton.addEventListener('click', saveCharacterSheet);
+            
+            // Show the modal when the Clear button is clicked
+            clearButton.addEventListener('click', () => {
+                clearModal.style.display = 'flex';
+            });
+            
+            // Hide the modal and clear data if the user confirms
+            confirmClearButton.addEventListener('click', () => {
+                clearCharacterSheet();
+                clearModal.style.display = 'none';
+            });
+
+            // Hide the modal if the user cancels
+            cancelClearButton.addEventListener('click', () => {
+                clearModal.style.display = 'none';
+            });
+
+            // Show the load modal when the Load button is clicked
+            loadButton.addEventListener('click', () => {
+                // If there's saved data, show the modal. Otherwise, just load.
+                if (localStorage.getItem('characterSheetData')) {
+                    loadModal.style.display = 'flex';
+                } else {
+                    loadCharacterSheet();
+                }
+            });
+
+            // Hide the modal and load data if the user confirms
+            confirmLoadButton.addEventListener('click', () => {
+                loadCharacterSheet();
+                loadModal.style.display = 'none';
+            });
+
+            // Hide the modal if the user cancels
+            cancelLoadButton.addEventListener('click', () => {
+                loadModal.style.display = 'none';
+            });
+            
+            // Event listeners for the new save modal
+            confirmSaveButton.addEventListener('click', saveCharacterSheetConfirmed);
+            cancelSaveButton.addEventListener('click', () => {
+                saveModal.style.display = 'none';
+            });
+            
+            exportButton.addEventListener('click', exportCharacterSheet);
+            importButton.addEventListener('click', importCharacterSheet);
+
+            // Perform initial load to set up all dynamic fields
+            loadCharacterSheet();
+        });
+    </script>
+
+</body>
+</html>

@@ -765,7 +765,7 @@
 
                 <!-- Unequipped Skills Section -->
                 <div class="glass-card p-6">
-                    <h2 class="text-2xl font-bold mb-4 text-white">Unequipped Skills (Click Rank to Cycle)</h2>
+                    <h2 class="text-2xl font-bold mb-4 text-white">Skill Archive</h2>
                     <div id="unactive-skills-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Initial fields will be added here by JS -->
                     </div>
@@ -814,6 +814,16 @@
 
                 <div class="glass-card p-6">
                     <h2 class="text-2xl font-bold mb-4 text-white">Traits</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="size" class="block text-sm font-medium mb-1 text-gray-400">Size</label>
+                            <input type="text" id="size" placeholder="180 cm" class="w-full">
+                        </div>
+                        <div>
+                            <label for="mass" class="block text-sm font-medium mb-1 text-gray-400">Mass</label>
+                            <input type="text" id="mass" placeholder="80 kg" class="w-full">
+                        </div>
+                    </div>
                     <div class="mb-4">
                         <textarea id="traits" rows="4" class="w-full p-2"></textarea>
                     </div>
@@ -1043,6 +1053,7 @@
                 // Ensure rank is a valid tier, otherwise default to 'F'
                 const initialRank = TIERS.includes((skill.rank || 'F').toUpperCase()) ? (skill.rank || 'F').toUpperCase() : 'F';
                 const skillLevel = skill.level || '';
+                const skillDescription = skill.description || '';
                 
                 const skillDiv = document.createElement('div');
                 skillDiv.classList.add('unactive-skill-row', 'flex', 'flex-col', 'gap-2', 'relative');
@@ -1053,6 +1064,7 @@
                 // Reverted to LEVEL then RANK, as originally intended.
                 skillDiv.innerHTML = `
                     <input type="text" class="unactive-skill-name" placeholder="Skill Name" value="${skillName}">
+                    <textarea class="unactive-skill-description w-full px-3 py-3" rows="3" placeholder="Description">${skillDescription}</textarea>
                     <div class="flex gap-2">
                         <!-- LEVEL field (Number) -->
                         <input type="number" class="w-1/2 stat-input-box unactive-skill-level" placeholder="Level" value="${skillLevel}">
@@ -1079,7 +1091,7 @@
             // Function to clear all data from the character sheet
             function clearCharacterSheet() {
                 // Clear static fields
-                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-level, .skill-level-input), textarea').forEach(input => {
+                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-level, .skill-level-input), textarea:not(.unactive-skill-description)').forEach(input => {
                     if (input) {
                         if (input.classList.contains('rank-input')) {
                             input.value = 'F'; // Reset rank inputs to F
@@ -1108,7 +1120,7 @@
                 const characterData = {};
 
                 // Save static fields (including rank-inputs which are now type="text")
-                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea').forEach(input => {
+                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea:not(.unactive-skill-description)').forEach(input => {
                     if (input) {
                         characterData[input.id] = input.value;
                     }
@@ -1177,13 +1189,15 @@
                     const nameInput = row.querySelector('.unactive-skill-name');
                     const rankInput = row.querySelector('.unactive-skill-rank');
                     const levelInput = row.querySelector('.unactive-skill-level');
-                    
+                    const descriptionInput = row.querySelector('.unactive-skill-description');
+
                     const name = nameInput ? nameInput.value : '';
                     const rank = rankInput ? rankInput.value : '';
                     const level = levelInput ? levelInput.value : '';
-                    
-                    if (name.trim() !== '' || rank.trim() !== 'F' || level.trim() !== '') {
-                        unequippedSkills.push({ name, rank, level });
+                    const description = descriptionInput ? descriptionInput.value : '';
+
+                    if (name.trim() !== '' || rank.trim() !== 'F' || level.trim() !== '' || description.trim() !== '') {
+                        unequippedSkills.push({ name, rank, level, description });
                     }
                 });
                 characterData.unequippedSkills = unequippedSkills;
@@ -1212,7 +1226,7 @@
 
                 if (characterData) {
                     // Load static fields
-                    document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea').forEach(input => {
+                    document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea:not(.unactive-skill-description)').forEach(input => {
                         if (input) { // Safety check
                             const savedValue = characterData[input.id];
                             if (savedValue !== undefined) {
@@ -1504,3 +1518,4 @@
 
 </body>
 </html>
+

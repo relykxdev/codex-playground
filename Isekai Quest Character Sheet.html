@@ -253,7 +253,13 @@
 
                 <!-- Aura Section -->
                 <div class="glass-card p-6">
-                    <h2 class="text-2xl font-bold mb-4 text-white">Aura</h2>
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-white">Aura</h2>
+                        <div class="mt-2">
+                            <p id="aura-size-density" class="text-xs font-semibold text-gray-400 tracking-wide uppercase">SIZE 0 cm radius / DENSITY 0</p>
+                            <div class="mt-1 border-b border-gray-700"></div>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                         <!-- Vitality -->
                         <div class="flex flex-col items-center">
@@ -1062,6 +1068,69 @@
             const kiSection = document.getElementById('ki-section');
             const kiLockToggle = document.getElementById('ki-lock-toggle');
             const kiInputs = kiSection ? Array.from(kiSection.querySelectorAll('input')) : [];
+            const auraSizeDensityDisplay = document.getElementById('aura-size-density');
+            const auraBaseFieldIds = ['vitality-base', 'stamina-base', 'mana-base'];
+            const auraCFieldIds = ['vitality-c', 'stamina-c', 'mana-c'];
+
+            function getNumericValue(id) {
+                const element = document.getElementById(id);
+                if (!element) {
+                    return 0;
+                }
+                const parsed = parseFloat(element.value);
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            function formatNumber(value) {
+                if (!Number.isFinite(value)) {
+                    return '0';
+                }
+
+                const normalized = Object.is(value, -0) ? 0 : value;
+
+                if (Number.isInteger(normalized)) {
+                    return normalized.toString();
+                }
+
+                const fixed = normalized.toFixed(2);
+                const trimmed = fixed.replace(/\.?0+$/, '');
+                if (trimmed === '' || trimmed === '-') {
+                    return '0';
+                }
+                return trimmed;
+            }
+
+            function formatMeasurement(value) {
+                const numericValue = Number.isFinite(value) ? value : 0;
+                const absoluteValue = Math.abs(numericValue);
+
+                if (absoluteValue >= 100) {
+                    const meters = numericValue / 100;
+                    return `${formatNumber(meters)} m`;
+                }
+
+                return `${formatNumber(numericValue)} cm`;
+            }
+
+            function calculateAuraMetrics() {
+                if (!auraSizeDensityDisplay) {
+                    return;
+                }
+
+                const includesKi = Boolean(kiSection && !kiSection.classList.contains('ki-locked'));
+                const baseIds = auraBaseFieldIds.slice();
+                const cIds = auraCFieldIds.slice();
+
+                if (includesKi) {
+                    baseIds.push('ki-base');
+                    cIds.push('ki-c');
+                }
+
+                const totalBase = baseIds.reduce((sum, fieldId) => sum + getNumericValue(fieldId), 0);
+                const totalC = cIds.reduce((sum, fieldId) => sum + getNumericValue(fieldId), 0);
+
+                auraSizeDensityDisplay.textContent = `SIZE ${formatMeasurement(totalBase)} / DENSITY ${formatNumber(totalC)}`;
+            }
 
             const setKiLockState = (isLocked = true) => {
                 if (!kiSection || !kiLockToggle) {
@@ -1077,6 +1146,8 @@
                 kiLockToggle.setAttribute('aria-label', isLocked ? 'Unlock Ki' : 'Lock Ki');
                 kiLockToggle.setAttribute('aria-pressed', String(!isLocked));
                 kiLockToggle.classList.toggle('ki-lock-button-active', !isLocked);
+
+                calculateAuraMetrics();
             };
 
             if (kiLockToggle && kiSection) {
@@ -1086,8 +1157,16 @@
                 });
             }
 
-            setKiLockState(true);
+            const auraInputIds = Array.from(new Set([...auraBaseFieldIds, ...auraCFieldIds, 'ki-base', 'ki-c']));
+            auraInputIds.forEach((id) => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', calculateAuraMetrics);
+                }
+            });
 
+            setKiLockState(true);
+            
             // Modal elements for SAVE
             const saveModal = document.getElementById('save-modal');
             const confirmSaveButton = document.getElementById('confirm-save-button');
@@ -1404,6 +1483,8 @@
                 applySkillData('#passive-skills-container', characterData.passiveSkills || []);
 
                 populateDynamicContainer(unactiveSkillsContainer, characterData.unequippedSkills || [], createUnactiveSkillField);
+
+                calculateAuraMetrics();
             }
 
             function persistCharacterData(characterData) {
@@ -1438,6 +1519,8 @@
                 resetDynamicContainer(unactiveSkillsContainer, createUnactiveSkillField);
 
                 setKiLockState(true);
+
+                calculateAuraMetrics();
 
                 if (showStatusMessage) {
                     showStatus('Character sheet cleared!', 'success');
@@ -1695,10 +1778,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-

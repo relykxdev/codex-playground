@@ -93,6 +93,49 @@
             background-color: rgb(99, 102, 241);
         }
 
+        /* Ki lock styles */
+        #ki-section {
+            position: relative;
+        }
+
+        .ki-lock-button {
+            background-color: rgba(71, 85, 105, 0.7);
+            color: #e5e7eb;
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .ki-lock-button:hover {
+            background-color: rgba(99, 102, 241, 0.85);
+            color: #fff;
+            box-shadow: 0 6px 12px rgba(99, 102, 241, 0.25);
+            transform: translateY(calc(-50% - 1px));
+        }
+
+        .ki-lock-button-active {
+            background-color: rgba(99, 102, 241, 0.85);
+            color: #fff;
+            box-shadow: 0 6px 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .ki-fields {
+            transition: filter 0.3s ease, opacity 0.3s ease;
+        }
+
+        .ki-locked .ki-fields {
+            filter: blur(6px);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
         /* Skill table specific styles */
         .skill-table-header {
             display: grid;
@@ -290,28 +333,33 @@
                             </div>
                         </div>
                         <!-- Ki -->
-                        <div class="flex flex-col items-center">
-                            <span class="font-medium text-gray-300 w-full text-center">Ki</span>
-                            <div class="flex gap-4 items-center">
-                                <div>
-                                    <label class="text-xs text-gray-400 mb-1">Base</label>
-                                    <input type="number" id="ki-base" class="stat-input-box">
-                                </div>
-                                <div>
-                                    <label class="text-xs text-gray-400 mb-1">Rank</label>
-                                    <!-- RANK FIELD - CLICK TO CYCLE -->
-                                    <input type="text" id="ki-rank" class="stat-input-box text-center rank-input" value="F" readonly>
-                                </div>
+                        <div id="ki-section" class="flex flex-col items-center">
+                            <div class="w-full flex items-center justify-center mb-2 relative">
+                                <span class="font-medium text-gray-300 text-center">Ki</span>
+                                <button type="button" id="ki-lock-toggle" class="ki-lock-button" aria-pressed="false" aria-label="Unlock Ki">🔒</button>
                             </div>
-                            <div class="flex flex-col items-center mt-2">
-                                <label class="text-xs text-gray-400 mb-1 w-full text-left">Modified</label>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-gray-400 text-sm font-bold">P:</span>
-                                    <input type="number" id="ki-p1" class="stat-input-box w-1/2">
-                                    <span class="text-gray-400 text-sm font-bold">/</span>
-                                    <input type="number" id="ki-p2" class="stat-input-box w-1/2">
-                                    <span class="text-gray-400 text-sm font-bold">C:</span>
-                                    <input type="number" id="ki-c" class="stat-input-box">
+                            <div class="ki-fields flex flex-col items-center w-full">
+                                <div class="flex gap-4 items-center">
+                                    <div>
+                                        <label class="text-xs text-gray-400 mb-1">Base</label>
+                                        <input type="number" id="ki-base" class="stat-input-box">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-400 mb-1">Rank</label>
+                                        <!-- RANK FIELD - CLICK TO CYCLE -->
+                                        <input type="text" id="ki-rank" class="stat-input-box text-center rank-input" value="F" readonly>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col items-center mt-2">
+                                    <label class="text-xs text-gray-400 mb-1 w-full text-left">Modified</label>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-400 text-sm font-bold">P:</span>
+                                        <input type="number" id="ki-p1" class="stat-input-box w-1/2">
+                                        <span class="text-gray-400 text-sm font-bold">/</span>
+                                        <input type="number" id="ki-p2" class="stat-input-box w-1/2">
+                                        <span class="text-gray-400 text-sm font-bold">C:</span>
+                                        <input type="number" id="ki-c" class="stat-input-box">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1003,6 +1051,35 @@
             const addTitleButton = document.getElementById('add-title');
             const dynamicTitlesContainer = document.getElementById('dynamic-titles-container');
 
+            const kiSection = document.getElementById('ki-section');
+            const kiLockToggle = document.getElementById('ki-lock-toggle');
+            const kiInputs = kiSection ? Array.from(kiSection.querySelectorAll('input')) : [];
+
+            const setKiLockState = (isLocked = true) => {
+                if (!kiSection || !kiLockToggle) {
+                    return;
+                }
+
+                kiSection.classList.toggle('ki-locked', isLocked);
+                kiInputs.forEach((input) => {
+                    input.disabled = isLocked;
+                });
+
+                kiLockToggle.textContent = isLocked ? '🔒' : '🔓';
+                kiLockToggle.setAttribute('aria-label', isLocked ? 'Unlock Ki' : 'Lock Ki');
+                kiLockToggle.setAttribute('aria-pressed', String(!isLocked));
+                kiLockToggle.classList.toggle('ki-lock-button-active', !isLocked);
+            };
+
+            if (kiLockToggle && kiSection) {
+                kiLockToggle.addEventListener('click', () => {
+                    const currentlyLocked = kiSection.classList.contains('ki-locked');
+                    setKiLockState(!currentlyLocked);
+                });
+            }
+
+            setKiLockState(true);
+
             // Modal elements for SAVE
             const saveModal = document.getElementById('save-modal');
             const confirmSaveButton = document.getElementById('confirm-save-button');
@@ -1216,6 +1293,8 @@
                 });
                 characterData.unequippedSkills = unequippedSkills;
 
+                characterData.kiLocked = kiSection ? kiSection.classList.contains('ki-locked') : true;
+
                 return characterData;
             }
 
@@ -1239,6 +1318,11 @@
             }
 
             function applyCharacterData(characterData) {
+                const kiLocked = characterData.kiLocked;
+                if (kiSection) {
+                    setKiLockState(kiLocked !== undefined ? kiLocked : true);
+                }
+
                 getStaticFieldElements().forEach((field) => {
                     const savedValue = characterData[field.id];
                     if (savedValue !== undefined) {
@@ -1293,6 +1377,8 @@
                 resetDynamicContainer(dynamicJobsContainer, createDynamicInputField);
                 resetDynamicContainer(dynamicTitlesContainer, createDynamicInputField);
                 resetDynamicContainer(unactiveSkillsContainer, createUnactiveSkillField);
+
+                setKiLockState(true);
 
                 if (showStatusMessage) {
                     showStatus('Character sheet cleared!', 'success');
@@ -1537,6 +1623,7 @@
 
 </body>
 </html>
+
 
 
 

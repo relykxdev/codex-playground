@@ -322,6 +322,11 @@
                 <div class="glass-card p-6">
                     <h2 class="text-2xl font-bold mb-4 text-white">Stats</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                        <!-- Competency Group -->
+                        <div class="col-span-full">
+                            <p class="text-xs font-semibold text-gray-400 tracking-wide uppercase">Competency</p>
+                            <div class="mt-1 border-b border-gray-700"></div>
+                        </div>
                         <!-- Strength -->
                         <div class="flex flex-col items-center">
                             <span class="font-medium text-gray-300 w-full text-left">Strength</span>
@@ -455,10 +460,10 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Resistance -->
-                        <div class="flex flex-col items-center">
-                            <span class="font-medium text-gray-300 w-full text-left">Resistance</span>
-                            <div class="flex gap-4 items-center">
+                        <!-- Resistance -->␊
+                        <div class="flex flex-col items-center">␊
+                            <span class="font-medium text-gray-300 w-full text-left">Resistance</span>␊
+                            <div class="flex gap-4 items-center">␊
                                 <div>
                                     <label class="text-xs text-gray-400 mb-1">Base</label>
                                     <input type="number" id="resistance-base" class="stat-input-box">
@@ -473,6 +478,11 @@
                                     <input type="text" id="resistance-rank" class="stat-input-box text-center rank-input" value="F" readonly>
                                 </div>
                             </div>
+                        </div>
+                        <!-- Stealth & Social Group -->
+                        <div class="col-span-full">
+                            <p class="text-xs font-semibold text-gray-400 tracking-wide uppercase">Stealth &amp; Social</p>
+                            <div class="mt-1 border-b border-gray-700"></div>
                         </div>
                         <!-- Wit -->
                         <div class="flex flex-col items-center">
@@ -764,7 +774,7 @@
                 </div>
 
                 <!-- Unequipped Skills Section -->
-                <div class="glass-card p-6">
+                <div class="glass-card p-6">␊
                     <h2 class="text-2xl font-bold mb-4 text-white">Skill Archive</h2>
                     <div id="unactive-skills-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Initial fields will be added here by JS -->
@@ -890,6 +900,10 @@
                 <div class="glass-card p-6">
                     <h2 class="text-2xl font-bold mb-4 text-white">Inventory</h2>
                     <textarea id="inventory" rows="10" class="w-full p-2"></textarea>
+                </div>
+                <div class="glass-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Conditions</h2>
+                    <textarea id="conditions" rows="10" class="w-full p-2"></textarea>
                 </div>
             </div>
         </div>
@@ -1518,4 +1532,5 @@
 
 </body>
 </html>
+
 

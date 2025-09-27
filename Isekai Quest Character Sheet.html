@@ -1344,7 +1344,7 @@
                 return TIERS.includes(normalized) ? normalized : 'F';
             };
 
-           const getStaticFieldElements = () => {
+            const getStaticFieldElements = () => {
                 const disallowedClasses = ['equipment-input', 'dynamic-input', 'unactive-skill-name', 'unactive-skill-level', 'unactive-skill-rank', 'skill-level-input', 'skill-cost-input', 'trait-input'];
                 return Array.from(document.querySelectorAll('input, textarea')).filter((el) => {
                     if (!el.id) return false;
@@ -1352,7 +1352,7 @@
                     return !disallowedClasses.some((cls) => el.classList.contains(cls));
                 });
             };
-
+            
             const getSkillData = (containerSelector) => {
                 const skills = [];
                 document.querySelectorAll(`${containerSelector} > .skill-row`).forEach((slot) => {
@@ -1367,6 +1367,7 @@
                         rank: normalizeRank(rankInput ? rankInput.value : 'F'),
                         cost: costInput ? costInput.value : ''
                     });
+                });
                 return skills;
             };
 
@@ -2016,4 +2017,5 @@
 
 </body>
 </html>
+
 

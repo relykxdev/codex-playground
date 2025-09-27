@@ -765,7 +765,7 @@
                     
                     <!-- Dynamic Equipment Section -->
                     <h3 class="text-xl font-bold mt-8 mb-4 text-white">Additional Equipment</h3>
-                    <div id="dynamic-equipment-container" class="space-y-4">
+                    <div id="dynamic-equipment-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Default field, cannot be deleted -->
                     </div>
                     <button id="add-equipment" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition-all duration-200">
@@ -1088,12 +1088,16 @@
 
             // Function to create a new dynamic equipment field
             function createEquipmentField(value = '') {
+                const item = typeof value === 'object' && value !== null ? value : { name: value || '', description: '' };
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('equipment-row', 'flex', 'flex-col', 'gap-2', 'relative');
                 const deleteBtn = document.createElement('button');
                 deleteBtn.classList.add('delete-equipment', 'dynamic-btn', 'text-xs', 'w-6', 'h-6', 'absolute', 'top-0', 'right-0', 'flex-shrink-0', 'flex', 'items-center', 'justify-center', 'font-bold');
                 deleteBtn.innerHTML = '&times;';
-                itemDiv.innerHTML = `<input type="text" class="equipment-input w-full" value="${value}" placeholder="Item Name">`;
+                itemDiv.innerHTML = `
+                    <input type="text" class="equipment-input equipment-name w-full" value="${item.name || ''}" placeholder="Item Name">
+                    <textarea class="equipment-input equipment-description w-full p-2" rows="3" placeholder="Description">${item.description || ''}</textarea>
+                `;
                 itemDiv.appendChild(deleteBtn);
                 return itemDiv;
             }
@@ -1127,7 +1131,7 @@
                 // Reverted to LEVEL then RANK, as originally intended.
                 skillDiv.innerHTML = `
                     <input type="text" class="unactive-skill-name" placeholder="Skill Name" value="${skillName}">
-                    <textarea class="unactive-skill-description w-full px-3 py-3" rows="3" placeholder="Description">${skillDescription}</textarea>
+                    <textarea class="unactive-skill-description w-full p-2" rows="3" placeholder="Description">${skillDescription}</textarea>
                     <div class="flex gap-2">
                         <!-- LEVEL field (Number) -->
                         <input type="number" class="w-1/2 stat-input-box unactive-skill-level" placeholder="Level" value="${skillLevel}">
@@ -1163,9 +1167,14 @@
                 });
 
                 const dynamicEquipment = [];
-                document.querySelectorAll('#dynamic-equipment-container .equipment-input').forEach((input) => {
-                    if (input && input.value.trim() !== '') {
-                        dynamicEquipment.push(input.value);
+                document.querySelectorAll('#dynamic-equipment-container .equipment-row').forEach((row) => {
+                    const nameInput = row.querySelector('.equipment-name');
+                    const descriptionInput = row.querySelector('.equipment-description');
+                    const name = nameInput ? nameInput.value : '';
+                    const description = descriptionInput ? descriptionInput.value : '';
+
+                    if (name.trim() !== '' || description.trim() !== '') {
+                        dynamicEquipment.push({ name, description });
                     }
                 });
                 characterData.dynamicEquipment = dynamicEquipment;
@@ -1528,6 +1537,7 @@
 
 </body>
 </html>
+
 
 
 

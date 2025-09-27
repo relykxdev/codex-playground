@@ -158,7 +158,7 @@
         }
         
         /* Specific style for layered skills to remove padding */
-        .unactive-skill-row, .equipment-row, .dynamic-input-row {
+        .unactive-skill-row, .equipment-row, .dynamic-input-row, .trait-row {
             position: relative;
             display: flex;
             flex-direction: column;
@@ -166,10 +166,11 @@
             padding: 0.5rem 0; /* Minimal padding for visual separation */
             margin-top: 0.5rem;
         }
-        
+
         .unactive-skill-row .delete-unactive-skill,
         .equipment-row .delete-equipment,
-        .dynamic-input-row .delete-dynamic-input {
+        .dynamic-input-row .delete-dynamic-input,
+        .trait-row .delete-trait {
             position: absolute;
             top: 0;
             right: 0;
@@ -883,7 +884,12 @@
                         </div>
                     </div>
                     <div class="mb-4">
-                        <textarea id="traits" rows="4" class="w-full p-2"></textarea>
+                        <div id="dynamic-traits-container" class="space-y-4">
+                            <!-- Default field, cannot be deleted -->
+                        </div>
+                        <button id="add-trait" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition-all duration-200">
+                            + Add Trait
+                        </button>
                     </div>
                 </div>
                 
@@ -1050,6 +1056,8 @@
             const dynamicJobsContainer = document.getElementById('dynamic-jobs-container');
             const addTitleButton = document.getElementById('add-title');
             const dynamicTitlesContainer = document.getElementById('dynamic-titles-container');
+            const addTraitButton = document.getElementById('add-trait');
+            const dynamicTraitsContainer = document.getElementById('dynamic-traits-container');
 
             const kiSection = document.getElementById('ki-section');
             const kiLockToggle = document.getElementById('ki-lock-toggle');
@@ -1104,7 +1112,7 @@
             };
 
             const getStaticFieldElements = () => {
-                const disallowedClasses = ['equipment-input', 'dynamic-input', 'unactive-skill-name', 'unactive-skill-level', 'unactive-skill-rank', 'skill-level-input'];
+                const disallowedClasses = ['equipment-input', 'dynamic-input', 'unactive-skill-name', 'unactive-skill-level', 'unactive-skill-rank', 'skill-level-input', 'trait-input'];
                 return Array.from(document.querySelectorAll('input, textarea')).filter((el) => {
                     if (!el.id) return false;
                     if (el.tagName === 'INPUT' && el.type === 'file') return false;
@@ -1179,6 +1187,21 @@
                 return itemDiv;
             }
 
+            function createTraitField(value = '') {
+                const trait = typeof value === 'object' && value !== null ? value : { name: value || '', description: '' };
+                const traitDiv = document.createElement('div');
+                traitDiv.classList.add('trait-row', 'flex', 'flex-col', 'gap-2', 'relative');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-trait', 'dynamic-btn', 'text-xs', 'w-6', 'h-6', 'absolute', 'top-0', 'right-0', 'flex-shrink-0', 'flex', 'items-center', 'justify-center', 'font-bold');
+                deleteBtn.innerHTML = '&times;';
+                traitDiv.innerHTML = `
+                    <input type="text" class="trait-input trait-name w-full" value="${trait.name || ''}" placeholder="Trait Name">
+                    <textarea class="trait-input trait-description w-full p-2" rows="3" placeholder="Description">${trait.description || ''}</textarea>
+                `;
+                traitDiv.appendChild(deleteBtn);
+                return traitDiv;
+            }
+
             // Function to create a new dynamic text field for Jobs and Titles
             function createDynamicInputField(value = '') {
                 const inputDiv = document.createElement('div');
@@ -1222,6 +1245,9 @@
 
             // Helper function to reset a dynamic container to a single empty field
             function resetDynamicContainer(container, createFunc) {
+                if (!container) {
+                    return;
+                }
                 container.innerHTML = '';
                 const newField = createFunc();
                 // Check if the newly created field has a delete button and remove it for the first element.
@@ -1230,6 +1256,21 @@
                     deleteButton.remove();
                 }
                 container.appendChild(newField);
+            }
+
+            function toTraitArray(traitsData, legacyText) {
+                if (Array.isArray(traitsData)) {
+                    return traitsData.map((trait) => ({
+                        name: trait && typeof trait === 'object' ? (trait.name || '') : '',
+                        description: trait && typeof trait === 'object' ? (trait.description || '') : ''
+                    }));
+                }
+
+                if (typeof legacyText === 'string' && legacyText.trim() !== '') {
+                    return [{ name: '', description: legacyText }];
+                }
+
+                return [];
             }
 
             function buildCharacterData() {
@@ -1255,6 +1296,19 @@
                     }
                 });
                 characterData.dynamicEquipment = dynamicEquipment;
+
+                const dynamicTraits = [];
+                document.querySelectorAll('#dynamic-traits-container .trait-row').forEach((row) => {
+                    const nameInput = row.querySelector('.trait-name');
+                    const descriptionInput = row.querySelector('.trait-description');
+                    const name = nameInput ? nameInput.value : '';
+                    const description = descriptionInput ? descriptionInput.value : '';
+
+                    if (name.trim() !== '' || description.trim() !== '') {
+                        dynamicTraits.push({ name, description });
+                    }
+                });
+                characterData.dynamicTraits = dynamicTraits;
 
                 const dynamicJobs = [];
                 document.querySelectorAll('#dynamic-jobs-container .dynamic-input').forEach((input) => {
@@ -1299,6 +1353,9 @@
             }
 
             function populateDynamicContainer(container, values, createFunc) {
+                if (!container) {
+                    return;
+                }
                 container.innerHTML = '';
                 if (!values || values.length === 0) {
                     resetDynamicContainer(container, createFunc);
@@ -1339,6 +1396,7 @@
                 });
 
                 populateDynamicContainer(dynamicEquipmentContainer, characterData.dynamicEquipment || [], createEquipmentField);
+                populateDynamicContainer(dynamicTraitsContainer, toTraitArray(characterData.dynamicTraits, characterData.traits), createTraitField);
                 populateDynamicContainer(dynamicJobsContainer, characterData.dynamicJobs || [], createDynamicInputField);
                 populateDynamicContainer(dynamicTitlesContainer, characterData.dynamicTitles || [], createDynamicInputField);
 
@@ -1374,6 +1432,7 @@
                 applySkillData('#passive-skills-container', []);
 
                 resetDynamicContainer(dynamicEquipmentContainer, createEquipmentField);
+                resetDynamicContainer(dynamicTraitsContainer, createTraitField);
                 resetDynamicContainer(dynamicJobsContainer, createDynamicInputField);
                 resetDynamicContainer(dynamicTitlesContainer, createDynamicInputField);
                 resetDynamicContainer(unactiveSkillsContainer, createUnactiveSkillField);
@@ -1510,6 +1569,9 @@
 
             // Event listener for adding a new equipment field
             addEquipmentButton.addEventListener('click', () => dynamicEquipmentContainer.appendChild(createEquipmentField()));
+            if (addTraitButton && dynamicTraitsContainer) {
+                addTraitButton.addEventListener('click', () => dynamicTraitsContainer.appendChild(createTraitField()));
+            }
             
             // Event listener for adding a new unequipped skill field
             addUnactiveSkillButton.addEventListener('click', () => unactiveSkillsContainer.appendChild(createUnactiveSkillField()));
@@ -1528,6 +1590,16 @@
                     }
                 }
             });
+
+            if (dynamicTraitsContainer) {
+                dynamicTraitsContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-trait')) {
+                        if (dynamicTraitsContainer.children.length > 1) {
+                            e.target.closest('.trait-row').remove();
+                        }
+                    }
+                });
+            }
 
             // Use event delegation for job and title delete buttons
             dynamicJobsContainer.addEventListener('click', (e) => {
@@ -1623,6 +1695,7 @@
 
 </body>
 </html>
+
 
 
 

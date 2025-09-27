@@ -1020,6 +1020,55 @@
 
             // Tier system configuration
             const TIERS = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'L'];
+
+            const normalizeRank = (value) => {
+                const normalized = (value || 'F').toString().toUpperCase();
+                return TIERS.includes(normalized) ? normalized : 'F';
+            };
+
+            const getStaticFieldElements = () => {
+                const disallowedClasses = ['equipment-input', 'dynamic-input', 'unactive-skill-name', 'unactive-skill-level', 'unactive-skill-rank', 'skill-level-input'];
+                return Array.from(document.querySelectorAll('input, textarea')).filter((el) => {
+                    if (!el.id) return false;
+                    if (el.tagName === 'INPUT' && el.type === 'file') return false;
+                    return !disallowedClasses.some((cls) => el.classList.contains(cls));
+                });
+            };
+
+            const getSkillData = (containerSelector) => {
+                const skills = [];
+                document.querySelectorAll(`${containerSelector} > .skill-row`).forEach((slot) => {
+                    const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
+                    const levelInput = slot.querySelector('.skill-level-input');
+                    const rankInput = slot.querySelector('.skill-rank-input');
+
+                    skills.push({
+                        name: nameInput ? nameInput.value : '',
+                        level: levelInput ? levelInput.value : '',
+                        rank: normalizeRank(rankInput ? rankInput.value : 'F')
+                    });
+                });
+                return skills;
+            };
+
+            const applySkillData = (containerSelector, skills = []) => {
+                document.querySelectorAll(`${containerSelector} > .skill-row`).forEach((slot, index) => {
+                    const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
+                    const levelInput = slot.querySelector('.skill-level-input');
+                    const rankInput = slot.querySelector('.skill-rank-input');
+                    const skill = skills[index] || {};
+
+                    if (nameInput) {
+                        nameInput.value = skill.name || '';
+                    }
+                    if (levelInput) {
+                        levelInput.value = skill.level || '';
+                    }
+                    if (rankInput) {
+                        rankInput.value = normalizeRank(skill.rank);
+                    }
+                });
+            };
             
             // Event listener for cycling through ranks
             document.addEventListener('click', (e) => {
@@ -1101,29 +1150,146 @@
                 }
                 container.appendChild(newField);
             }
-            
-            // Function to clear all data from the character sheet
-            function clearCharacterSheet() {
-                // Clear static fields
-                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-level, .skill-level-input), textarea:not(.unactive-skill-description)').forEach(input => {
-                    if (input) {
-                        if (input.classList.contains('rank-input')) {
-                            input.value = 'F'; // Reset rank inputs to F
-                        } else {
-                            input.value = '';
-                        }
+
+            function buildCharacterData() {
+                const characterData = {};
+
+                getStaticFieldElements().forEach((field) => {
+                    if (field.classList.contains('rank-input')) {
+                        characterData[field.id] = normalizeRank(field.value);
+                    } else {
+                        characterData[field.id] = field.value;
                     }
                 });
-                
-                // Clear and reset dynamic containers
+
+                const dynamicEquipment = [];
+                document.querySelectorAll('#dynamic-equipment-container .equipment-input').forEach((input) => {
+                    if (input && input.value.trim() !== '') {
+                        dynamicEquipment.push(input.value);
+                    }
+                });
+                characterData.dynamicEquipment = dynamicEquipment;
+
+                const dynamicJobs = [];
+                document.querySelectorAll('#dynamic-jobs-container .dynamic-input').forEach((input) => {
+                    if (input && input.value.trim() !== '') {
+                        dynamicJobs.push(input.value);
+                    }
+                });
+                characterData.dynamicJobs = dynamicJobs;
+
+                const dynamicTitles = [];
+                document.querySelectorAll('#dynamic-titles-container .dynamic-input').forEach((input) => {
+                    if (input && input.value.trim() !== '') {
+                        dynamicTitles.push(input.value);
+                    }
+                });
+                characterData.dynamicTitles = dynamicTitles;
+
+                characterData.equippedSkills = getSkillData('#active-skills-container');
+                characterData.passiveSkills = getSkillData('#passive-skills-container');
+
+                const unequippedSkills = [];
+                document.querySelectorAll('#unactive-skills-container .unactive-skill-row').forEach((row) => {
+                    const nameInput = row.querySelector('.unactive-skill-name');
+                    const rankInput = row.querySelector('.unactive-skill-rank');
+                    const levelInput = row.querySelector('.unactive-skill-level');
+                    const descriptionInput = row.querySelector('.unactive-skill-description');
+
+                    const name = nameInput ? nameInput.value : '';
+                    const rank = rankInput ? normalizeRank(rankInput.value) : 'F';
+                    const level = levelInput ? levelInput.value : '';
+                    const description = descriptionInput ? descriptionInput.value : '';
+
+                    if (name.trim() !== '' || level.trim() !== '' || description.trim() !== '' || rank !== 'F') {
+                        unequippedSkills.push({ name, rank, level, description });
+                    }
+                });
+                characterData.unequippedSkills = unequippedSkills;
+
+                return characterData;
+            }
+
+            function populateDynamicContainer(container, values, createFunc) {
+                container.innerHTML = '';
+                if (!values || values.length === 0) {
+                    resetDynamicContainer(container, createFunc);
+                    return;
+                }
+
+                values.forEach((entry, index) => {
+                    const field = createFunc(entry);
+                    if (index === 0) {
+                        const deleteButton = field.querySelector('button');
+                        if (deleteButton) {
+                            deleteButton.remove();
+                        }
+                    }
+                    container.appendChild(field);
+                });
+            }
+
+            function applyCharacterData(characterData) {
+                getStaticFieldElements().forEach((field) => {
+                    const savedValue = characterData[field.id];
+                    if (savedValue !== undefined) {
+                        if (field.classList.contains('rank-input')) {
+                            field.value = normalizeRank(savedValue);
+                        } else {
+                            field.value = savedValue;
+                        }
+                    } else if (field.classList.contains('rank-input')) {
+                        field.value = 'F';
+                    } else {
+                        field.value = '';
+                    }
+                });
+
+                populateDynamicContainer(dynamicEquipmentContainer, characterData.dynamicEquipment || [], createEquipmentField);
+                populateDynamicContainer(dynamicJobsContainer, characterData.dynamicJobs || [], createDynamicInputField);
+                populateDynamicContainer(dynamicTitlesContainer, characterData.dynamicTitles || [], createDynamicInputField);
+
+                applySkillData('#active-skills-container', characterData.equippedSkills || []);
+                applySkillData('#passive-skills-container', characterData.passiveSkills || []);
+
+                populateDynamicContainer(unactiveSkillsContainer, characterData.unequippedSkills || [], createUnactiveSkillField);
+            }
+
+            function persistCharacterData(characterData) {
+                try {
+                    localStorage.setItem('characterSheetData', JSON.stringify(characterData));
+                    return true;
+                } catch (error) {
+                    console.error(error);
+                    return false;
+                }
+            }
+
+            // Function to clear all data from the character sheet
+            function clearCharacterSheet(options = {}) {
+                const { showStatusMessage = true } = options;
+
+                getStaticFieldElements().forEach((field) => {
+                    if (field.classList.contains('rank-input')) {
+                        field.value = 'F';
+                    } else {
+                        field.value = '';
+                    }
+                });
+
+                applySkillData('#active-skills-container', []);
+                applySkillData('#passive-skills-container', []);
+
                 resetDynamicContainer(dynamicEquipmentContainer, createEquipmentField);
                 resetDynamicContainer(dynamicJobsContainer, createDynamicInputField);
                 resetDynamicContainer(dynamicTitlesContainer, createDynamicInputField);
                 resetDynamicContainer(unactiveSkillsContainer, createUnactiveSkillField);
-                
-                showStatus('Character sheet cleared!', 'success');
+
+                if (showStatusMessage) {
+                    showStatus('Character sheet cleared!', 'success');
+                }
             }
-            
+
             // Function to save character data
             function saveCharacterSheet() {
                 saveModal.style.display = 'flex';
@@ -1131,95 +1297,10 @@
 
             // Function to perform the actual saving after confirmation
             function saveCharacterSheetConfirmed() {
-                const characterData = {};
-
-                // Save static fields (including rank-inputs which are now type="text")
-                document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea:not(.unactive-skill-description)').forEach(input => {
-                    if (input) {
-                        characterData[input.id] = input.value;
-                    }
-                });
-                
-                // Save dynamic equipment fields
-                const dynamicEquipment = [];
-                document.querySelectorAll('#dynamic-equipment-container .equipment-input').forEach(input => {
-                    if (input && input.value.trim() !== '') {
-                        dynamicEquipment.push(input.value);
-                    }
-                });
-                characterData.dynamicEquipment = dynamicEquipment;
-
-                // Save dynamic jobs fields
-                const dynamicJobs = [];
-                document.querySelectorAll('#dynamic-jobs-container .dynamic-input').forEach(input => {
-                    if (input && input.value.trim() !== '') {
-                        dynamicJobs.push(input.value);
-                    }
-                });
-                characterData.dynamicJobs = dynamicJobs;
-
-                // Save dynamic titles fields
-                const dynamicTitles = [];
-                document.querySelectorAll('#dynamic-titles-container .dynamic-input').forEach(input => {
-                    if (input && input.value.trim() !== '') {
-                        dynamicTitles.push(input.value);
-                    }
-                });
-                characterData.dynamicTitles = dynamicTitles;
-
-                // Save equipped skills
-                const equippedSkills = [];
-                document.querySelectorAll('#active-skills-container > .skill-row').forEach((slot) => {
-                    const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
-                    const levelInput = slot.querySelector('.skill-level-input');
-                    const rankInput = slot.querySelector('.skill-rank-input');
-                    
-                    const name = nameInput ? nameInput.value : '';
-                    const level = levelInput ? levelInput.value : '';
-                    const rank = rankInput ? rankInput.value : '';
-                    
-                    equippedSkills.push({ name, level, rank });
-                });
-                characterData.equippedSkills = equippedSkills;
-
-                // Save passive skills
-                const passiveSkills = [];
-                document.querySelectorAll('#passive-skills-container > .skill-row').forEach((slot) => {
-                    const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
-                    const levelInput = slot.querySelector('.skill-level-input');
-                    const rankInput = slot.querySelector('.skill-rank-input');
-                    
-                    const name = nameInput ? nameInput.value : '';
-                    const level = levelInput ? levelInput.value : '';
-                    const rank = rankInput ? rankInput.value : '';
-                    
-                    passiveSkills.push({ name, level, rank });
-                });
-                characterData.passiveSkills = passiveSkills;
-                
-                // Save unequipped skills
-                const unequippedSkills = [];
-                document.querySelectorAll('#unactive-skills-container .unactive-skill-row').forEach(row => {
-                    const nameInput = row.querySelector('.unactive-skill-name');
-                    const rankInput = row.querySelector('.unactive-skill-rank');
-                    const levelInput = row.querySelector('.unactive-skill-level');
-                    const descriptionInput = row.querySelector('.unactive-skill-description');
-
-                    const name = nameInput ? nameInput.value : '';
-                    const rank = rankInput ? rankInput.value : '';
-                    const level = levelInput ? levelInput.value : '';
-                    const description = descriptionInput ? descriptionInput.value : '';
-
-                    if (name.trim() !== '' || rank.trim() !== 'F' || level.trim() !== '' || description.trim() !== '') {
-                        unequippedSkills.push({ name, rank, level, description });
-                    }
-                });
-                characterData.unequippedSkills = unequippedSkills;
-
-                try {
-                    localStorage.setItem('characterSheetData', JSON.stringify(characterData));
+                const characterData = buildCharacterData();
+                if (persistCharacterData(characterData)) {
                     showStatus('Character sheet saved!', 'success');
-                } catch (e) {
+                } else {
                     showStatus('Error saving character sheet.', 'error');
                 }
                 saveModal.style.display = 'none';
@@ -1229,135 +1310,48 @@
             // Function to load character data
             function loadCharacterSheet(data = null) {
                 let characterData = null;
-                if (data) {
+                const fromImport = Boolean(data);
+
+                if (fromImport) {
                     characterData = data;
                 } else {
                     const savedData = localStorage.getItem('characterSheetData');
                     if (savedData) {
-                        characterData = JSON.parse(savedData);
+                        try {
+                            characterData = JSON.parse(savedData);
+                        } catch (error) {
+                            console.error(error);
+                            showStatus('Error reading saved data. Please import or save again.', 'error');
+                            return;
+                        }
                     }
                 }
 
-                if (characterData) {
-                    // Load static fields
-                    document.querySelectorAll('input:not(.equipment-input, .dynamic-input, .unactive-skill-name, .unactive-skill-rank, .unactive-skill-level), textarea:not(.unactive-skill-description)').forEach(input => {
-                        if (input) { // Safety check
-                            const savedValue = characterData[input.id];
-                            if (savedValue !== undefined) {
-                                input.value = savedValue;
-                            }
-                        }
-                    });
-
-                    // Clear and repopulate dynamic equipment fields
-                    dynamicEquipmentContainer.innerHTML = '';
-                    const dynamicEquipment = characterData.dynamicEquipment || [];
-                    if (dynamicEquipment.length > 0) {
-                        const firstItem = createEquipmentField(dynamicEquipment[0]);
-                        firstItem.querySelector('.delete-equipment').remove();
-                        dynamicEquipmentContainer.appendChild(firstItem);
-                        
-                        for (let i = 1; i < dynamicEquipment.length; i++) {
-                            dynamicEquipmentContainer.appendChild(createEquipmentField(dynamicEquipment[i]));
-                        }
+                if (characterData && typeof characterData === 'object') {
+                    applyCharacterData(characterData);
+                    if (fromImport) {
+                        const saved = persistCharacterData(characterData);
+                        showStatus(saved ? 'Character sheet imported!' : 'Imported data loaded, but saving failed.', saved ? 'success' : 'error');
                     } else {
-                         resetDynamicContainer(dynamicEquipmentContainer, createEquipmentField);
+                        showStatus('Character sheet loaded!', 'success');
                     }
-
-                    // Clear and repopulate dynamic jobs fields
-                    dynamicJobsContainer.innerHTML = '';
-                    const dynamicJobs = characterData.dynamicJobs || [];
-                    if (dynamicJobs.length > 0) {
-                        const firstItem = createDynamicInputField(dynamicJobs[0]);
-                        firstItem.querySelector('.delete-dynamic-input').remove();
-                        dynamicJobsContainer.appendChild(firstItem);
-                        for (let i = 1; i < dynamicJobs.length; i++) {
-                            dynamicJobsContainer.appendChild(createDynamicInputField(dynamicJobs[i]));
-                        }
-                    } else {
-                         resetDynamicContainer(dynamicJobsContainer, createDynamicInputField);
-                    }
-
-                    // Clear and repopulate dynamic titles fields
-                    dynamicTitlesContainer.innerHTML = '';
-                    const dynamicTitles = characterData.dynamicTitles || [];
-                    if (dynamicTitles.length > 0) {
-                        const firstItem = createDynamicInputField(dynamicTitles[0]);
-                        firstItem.querySelector('.delete-dynamic-input').remove();
-                        dynamicTitlesContainer.appendChild(firstItem);
-                        for (let i = 1; i < dynamicTitles.length; i++) {
-                            dynamicTitlesContainer.appendChild(createDynamicInputField(dynamicTitles[i]));
-                        }
-                    } else {
-                         resetDynamicContainer(dynamicTitlesContainer, createDynamicInputField);
-                    }
-
-                    // Load equipped skills
-                    const equippedSkills = characterData.equippedSkills || [];
-                    document.querySelectorAll('#active-skills-container > .skill-row').forEach((slot, index) => {
-                        const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
-                        const levelInput = slot.querySelector('.skill-level-input');
-                        const rankInput = slot.querySelector('.skill-rank-input');
-                        
-                        if (nameInput && equippedSkills[index]) {
-                            nameInput.value = equippedSkills[index].name;
-                        }
-                        if (levelInput && equippedSkills[index]) {
-                            levelInput.value = equippedSkills[index].level;
-                        }
-                        if (rankInput && equippedSkills[index]) {
-                            // Ensure rank is a valid tier, otherwise default to 'F'
-                            const rankValue = equippedSkills[index].rank;
-                            rankInput.value = TIERS.includes((rankValue || 'F').toUpperCase()) ? (rankValue || 'F').toUpperCase() : 'F';
-                        }
-                    });
-
-                    // Load passive skills
-                    const passiveSkills = characterData.passiveSkills || [];
-                    document.querySelectorAll('#passive-skills-container > .skill-row').forEach((slot, index) => {
-                        const nameInput = slot.querySelector('input[type="text"]:not(.rank-input)');
-                        const levelInput = slot.querySelector('.skill-level-input');
-                        const rankInput = slot.querySelector('.skill-rank-input');
-                        
-                        if (nameInput && passiveSkills[index]) {
-                            nameInput.value = passiveSkills[index].name;
-                        }
-                        if (levelInput && passiveSkills[index]) {
-                            levelInput.value = passiveSkills[index].level;
-                        }
-                        if (rankInput && passiveSkills[index]) {
-                            const rankValue = passiveSkills[index].rank;
-                            rankInput.value = TIERS.includes((rankValue || 'F').toUpperCase()) ? (rankValue || 'F').toUpperCase() : 'F';
-                        }
-                    });
-                    
-                    // Clear and repopulate unequipped skills
-                    unactiveSkillsContainer.innerHTML = '';
-                    const unequippedSkills = characterData.unequippedSkills || [];
-                    if (unequippedSkills.length > 0) {
-                        const firstSkill = createUnactiveSkillField(unequippedSkills[0]);
-                        firstSkill.querySelector('.delete-unactive-skill').remove();
-                        unactiveSkillsContainer.appendChild(firstSkill);
-
-                        for (let i = 1; i < unequippedSkills.length; i++) {
-                            unactiveSkillsContainer.appendChild(createUnactiveSkillField(unequippedSkills[i]));
-                        }
-                    } else {
-                        resetDynamicContainer(unactiveSkillsContainer, createUnactiveSkillField);
-                    }
-                    
-                    showStatus('Character sheet loaded!', 'success');
-
+                } else if (fromImport) {
+                    showStatus('Imported data is invalid.', 'error');
                 } else {
+                    clearCharacterSheet({ showStatusMessage: false });
                     showStatus('No saved data found. Default fields created.', 'info');
-                    clearCharacterSheet();
                 }
             }
 
             // Function to export character data to a JSON file
             function exportCharacterSheet() {
-                saveCharacterSheetConfirmed(); // Save first to ensure latest data is exported
-                const data = localStorage.getItem('characterSheetData');
+                const characterData = buildCharacterData();
+                if (!persistCharacterData(characterData)) {
+                    showStatus('Error saving character sheet.', 'error');
+                    return;
+                }
+
+                const data = JSON.stringify(characterData, null, 2);
                 if (data) {
                     const now = new Date();
                     const timestamp = now.getFullYear() + '-' +
@@ -1366,10 +1360,10 @@
                                       String(now.getHours()).padStart(2, '0') + '-' +
                                       String(now.getMinutes()).padStart(2, '0') + '-' +
                                       String(now.getSeconds()).padStart(2, '0');
-                    
+
                     const name = (document.getElementById('name').value || 'NewCharacter').replace(/\s+/g, '_');
                     const filename = `${name}_${timestamp}.json`;
-                    
+
                     const blob = new Blob([data], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -1406,19 +1400,8 @@
                     };
                     reader.readAsText(file);
                 }
+                event.target.value = '';
             });
-
-            // Handle confirmed import load
-            confirmLoadButton.addEventListener('click', () => {
-                const dataString = loadModal.dataset.importedData;
-                if (dataString) {
-                    const importedData = JSON.parse(dataString);
-                    loadCharacterSheet(importedData);
-                }
-                loadModal.style.display = 'none';
-                delete loadModal.dataset.importedData;
-            });
-
 
             function showStatus(message, type = 'success') {
                 statusMessage.textContent = message;
@@ -1497,7 +1480,7 @@
 
             // Show the load modal when the Load button is clicked
             loadButton.addEventListener('click', () => {
-                // If there's saved data, show the modal. Otherwise, just load.
+                delete loadModal.dataset.importedData;
                 if (localStorage.getItem('characterSheetData')) {
                     loadModal.style.display = 'flex';
                 } else {
@@ -1507,13 +1490,26 @@
 
             // Hide the modal and load data if the user confirms
             confirmLoadButton.addEventListener('click', () => {
-                loadCharacterSheet();
+                const dataString = loadModal.dataset.importedData;
+                if (dataString) {
+                    try {
+                        const importedData = JSON.parse(dataString);
+                        loadCharacterSheet(importedData);
+                    } catch (error) {
+                        console.error(error);
+                        showStatus('Imported data is invalid.', 'error');
+                    }
+                } else {
+                    loadCharacterSheet();
+                }
                 loadModal.style.display = 'none';
+                delete loadModal.dataset.importedData;
             });
 
             // Hide the modal if the user cancels
             cancelLoadButton.addEventListener('click', () => {
                 loadModal.style.display = 'none';
+                delete loadModal.dataset.importedData;
             });
             
             // Event listeners for the new save modal
@@ -1532,6 +1528,7 @@
 
 </body>
 </html>
+
 
 
 
